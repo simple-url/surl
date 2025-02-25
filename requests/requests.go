@@ -36,7 +36,7 @@ func MakeRequestWithTimeout(client *http.Client, method string, url string, head
 	}
 
 	go func() {
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * time.Duration(timeout))
 		cancel()
 	}()
 
