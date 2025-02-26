@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+var VERSION string = "v1.0.0"
+
 func PrintWithWhiteSpace(text string, max_space int) string {
 	var sb strings.Builder
 	text_length := len(text)
@@ -19,7 +21,7 @@ func PrintWithWhiteSpace(text string, max_space int) string {
 }
 
 func HelpMessage() {
-	fmt.Println("SURL v0.0.1")
+	fmt.Println("SURL " + VERSION)
 	fmt.Println()
 	fmt.Println("Commands:")
 	// fmt.Println("i init       create surl.json")
