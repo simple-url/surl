@@ -19,21 +19,26 @@ type SurlHeader struct {
 }
 
 type SurlRequest struct {
-	Name    string       `json:"name"`
-	Url     string       `json:"url"`
-	Method  string       `json:"method"`
-	Headers []SurlHeader `json:"headers"`
-	Timeout *int         `json:"timeout"`
-	Body    *string      `json:"body"`
+	Name          string                        `json:"name"`
+	Url           string                        `json:"url"`
+	Method        string                        `json:"method"`
+	Headers       []SurlHeader                  `json:"headers"`
+	Timeout       *int                          `json:"timeout"`
+	Body          *string                       `json:"body"`
+	Json          *map[string]interface{}       `json:"json"`
+	Form          *[]requests.FormUrlItem       `json:"form"`
+	FormMultipart *[]requests.FormMultipartItem `json:"form_multipart"`
 }
 
 type Surl struct {
-	Requests []SurlRequest `json:"requests"`
+	Requests   []SurlRequest `json:"requests"`
+	FileReader utils.IFileReader
 }
 
 func NewSurl() *Surl {
 	return &Surl{
-		Requests: []SurlRequest{},
+		Requests:   []SurlRequest{},
+		FileReader: &utils.FileReader{},
 	}
 }
 
@@ -101,11 +106,48 @@ func (s *Surl) Run(name string, verbose bool) error {
 
 			// set body
 			var body io.Reader = nil
+			var ct string
 			if item.Body != nil {
-				// if body != nil {
-				// 	return errors.New(fmt.Sprint("invalid request on:", item.Name, "single request can only have one body/form/json"))
-				// }
 				body = strings.NewReader(*item.Body)
+			}
+
+			// set json
+			if item.Json != nil {
+				if body != nil {
+					return errors.New(fmt.Sprint("invalid request on:", item.Name, "single request can only have one body/form/form_multipart/json"))
+				}
+				var err error = nil
+				body, ct, err = requests.JsonRequestParser(*item.Json)
+				if err != nil {
+					return err
+				}
+				headers["content-type"] = ct
+			}
+
+			// set form
+			if item.Form != nil {
+				if body != nil {
+					return errors.New(fmt.Sprint("invalid request on:", item.Name, "single request can only have one body/form/form_multipart/json"))
+				}
+				var err error = nil
+				body, ct, err = requests.FormUrlRequestParser(*item.Form)
+				if err != nil {
+					return err
+				}
+				headers["content-type"] = ct
+			}
+
+			// set form multipart
+			if item.FormMultipart != nil {
+				if body != nil {
+					return errors.New(fmt.Sprint("invalid request on:", item.Name, "single request can only have one body/form/form_multipart/json"))
+				}
+				var err error = nil
+				body, ct, err = requests.FormMultipartRequestParser(*item.FormMultipart, s.FileReader)
+				if err != nil {
+					return err
+				}
+				headers["content-type"] = ct
 			}
 
 			// make request
