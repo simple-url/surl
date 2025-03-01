@@ -30,8 +30,9 @@ it make it easy to reproduce http request. Here an example of surl.json file.
                     "value": "application/json"
                 }
             ],
-            "body": "{\"hello\":\"world\"}",
-            "timeout": 1
+            "json": {
+                "hello": "world"
+            },
         }
     ]
 }

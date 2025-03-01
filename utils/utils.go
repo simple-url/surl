@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -31,4 +33,22 @@ func HelpMessage() {
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  -h         show help for specific command")
+}
+
+type IFileReader interface {
+	ReadFile(path string) (*[]byte, error)
+}
+
+type FileReader struct {
+}
+
+func (fr *FileReader) ReadFile(file_path string) (*[]byte, error) {
+	if _, err := os.Stat(file_path); errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	file_data, err := os.ReadFile(file_path)
+	if err != nil {
+		return nil, err
+	}
+	return &file_data, nil
 }
