@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-var VERSION string = "v1.0.0"
-
 func PrintWithWhiteSpace(text string, max_space int) string {
 	var sb strings.Builder
 	text_length := len(text)
@@ -20,19 +18,6 @@ func PrintWithWhiteSpace(text string, max_space int) string {
 		}
 	}
 	return sb.String()
-}
-
-func HelpMessage() {
-	fmt.Println("SURL " + VERSION)
-	fmt.Println()
-	fmt.Println("Commands:")
-	// fmt.Println("i init       create surl.json")
-	fmt.Println("  list       show list of requests")
-	fmt.Println("  run <name> run http request by name")
-	fmt.Println("  help       show this help message")
-	fmt.Println()
-	fmt.Println("Flags:")
-	fmt.Println("  -h         show help for specific command")
 }
 
 type IFileReader interface {
@@ -51,4 +36,45 @@ func (fr *FileReader) ReadFile(file_path string) (*[]byte, error) {
 		return nil, err
 	}
 	return &file_data, nil
+}
+
+type IResponse interface {
+	Println(text string)
+	Error(text string)
+	Exit()
+}
+
+type Response struct {
+}
+
+func (r *Response) Println(text string) {
+	fmt.Println(text)
+}
+
+func (r *Response) Error(text string) {
+	fmt.Println(text)
+	os.Exit(1)
+}
+
+func (r *Response) Exit() {
+	os.Exit(1)
+}
+
+type MockResponse struct {
+	Ok     []string
+	Err    []string
+	IsExit bool
+}
+
+func (r *MockResponse) Println(text string) {
+	r.Ok = append(r.Ok, text)
+}
+
+func (r *MockResponse) Error(text string) {
+	r.Err = append(r.Err, text)
+	r.IsExit = true
+}
+
+func (r *MockResponse) Exit() {
+	r.IsExit = true
 }

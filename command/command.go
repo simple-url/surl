@@ -13,6 +13,8 @@ import (
 	"github.com/simple-url/surl/utils"
 )
 
+var VERSION string = "v1.0.0"
+
 type SurlHeader struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -185,4 +187,17 @@ func (s *Surl) RunHelp() {
 	fmt.Println("  -p <path>  overide json path (default: ./surl.json)")
 	fmt.Println("  -v         run verbosely")
 	fmt.Println("  -h         show this help message")
+}
+
+func (s *Surl) HelpMessage() {
+	fmt.Println("SURL " + VERSION)
+	fmt.Println()
+	fmt.Println("Commands:")
+	// fmt.Println("i init       create surl.json")
+	fmt.Println("  list       show list of requests")
+	fmt.Println("  run <name> run http request by name")
+	fmt.Println("  help       show this help message")
+	fmt.Println()
+	fmt.Println("Flags:")
+	fmt.Println("  -h         show help for specific command")
 }
