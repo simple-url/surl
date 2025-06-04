@@ -13,7 +13,7 @@ import (
 	"github.com/simple-url/surl/requests"
 )
 
-type PingResponse struct {
+type TestResponse struct {
 	Path    string              `json:"path"`
 	Method  string              `json:"method"`
 	Headers map[string][]string `json:"headers"`
@@ -24,9 +24,167 @@ type JsonRequest struct {
 	Hello string `json:"hello"`
 }
 
+func TestRequestBuilder(t *testing.T) {
+	// Given
+	res := TestResponse{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		res.Path = r.URL.Path
+		res.Method = r.Method
+		res.Headers = r.Header
+		body_buf := new(strings.Builder)
+		if _, err := io.Copy(body_buf, r.Body); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Add("content-type", "text/plain")
+			w.Write([]byte(err.Error()))
+			return
+		}
+		res.Body = body_buf.String()
+		payload, err := json.Marshal(res)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Add("content-type", "text/plain")
+			w.Write([]byte(err.Error()))
+			return
+		}
+		w.Header().Add("content-type", "application/json")
+		w.Write(payload)
+	}))
+	defer server.Close()
+	client := server.Client()
+
+	// When
+	json_body := JsonRequest{
+		Hello: "world",
+	}
+	var json_buf bytes.Buffer
+	err := json.NewEncoder(&json_buf).Encode(json_body)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	req := requests.InitRequests()
+	req.OverrideClient(client)
+	req.SetMethod("POST")
+	req.SetUrl(server.URL + "/hai")
+	req.AddHeader("content-type", "application/json")
+	req.SetBody(&json_buf)
+	response, err := req.Exec()
+
+	// Expect
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if res.Path != "/hai" {
+		t.Error("wrong path, path should return /hai")
+	}
+	if res.Method != "POST" {
+		t.Error("wrong method method should return POST")
+	}
+	vals, is_found := res.Headers["Content-Type"]
+	if !is_found {
+		t.Error("headers content-type not found")
+	}
+	is_value_found := false
+	for _, item := range vals {
+		if item == "application/json" {
+			is_value_found = true
+		}
+	}
+	if !is_value_found {
+		t.Error("value content-type: application/json not found")
+	}
+	if res.Body != "{\"hello\":\"world\"}\n" {
+		t.Error("invalid body value")
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	response_json := TestResponse{}
+	if err := json.Unmarshal(body, &response_json); err != nil {
+		t.Error(err.Error())
+	}
+}
+
+func TestRequestBuilderJson(t *testing.T) {
+	// Given
+	res := TestResponse{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		res.Path = r.URL.Path
+		res.Method = r.Method
+		res.Headers = r.Header
+		body_buf := new(strings.Builder)
+		if _, err := io.Copy(body_buf, r.Body); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Add("content-type", "text/plain")
+			w.Write([]byte(err.Error()))
+			return
+		}
+		res.Body = body_buf.String()
+		payload, err := json.Marshal(res)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Add("content-type", "text/plain")
+			w.Write([]byte(err.Error()))
+			return
+		}
+		w.Header().Add("content-type", "application/json")
+		w.Write(payload)
+	}))
+	defer server.Close()
+	client := server.Client()
+
+	// When
+	req := requests.InitRequests()
+	req.OverrideClient(client)
+	req.SetMethod("POST")
+	req.SetUrl(server.URL + "/hai")
+	err := req.Json(map[string]interface{}{
+		"hello": "world",
+	})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	response, err := req.Exec()
+
+	// Expect
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if res.Path != "/hai" {
+		t.Error("wrong path, path should return /hai")
+	}
+	if res.Method != "POST" {
+		t.Error("wrong method method should return POST")
+	}
+	vals, is_found := res.Headers["Content-Type"]
+	if !is_found {
+		t.Error("headers content-type not found")
+	}
+	is_value_found := false
+	for _, item := range vals {
+		if item == "application/json" {
+			is_value_found = true
+		}
+	}
+	if !is_value_found {
+		t.Error("value content-type: application/json not found")
+	}
+	if res.Body != "{\"hello\":\"world\"}" {
+		t.Error("invalid body value")
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	response_json := TestResponse{}
+	if err := json.Unmarshal(body, &response_json); err != nil {
+		t.Error(err.Error())
+	}
+}
+
 func TestMakeRequest(t *testing.T) {
 	// Given
-	res := PingResponse{}
+	res := TestResponse{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		res.Path = r.URL.Path
 		res.Method = r.Method
@@ -86,7 +244,7 @@ func TestMakeRequest(t *testing.T) {
 		}
 	}
 	if !is_value_found {
-		t.Error("value content-type: application-json not found")
+		t.Error("value content-type: application/json not found")
 	}
 	if res.Body != "{\"hello\":\"world\"}\n" {
 		t.Error("invalid body value")
@@ -95,7 +253,7 @@ func TestMakeRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	response_json := PingResponse{}
+	response_json := TestResponse{}
 	if err := json.Unmarshal(body, &response_json); err != nil {
 		t.Error(err.Error())
 	}
@@ -103,7 +261,7 @@ func TestMakeRequest(t *testing.T) {
 
 func TestMakeRequestWithTimeout(t *testing.T) {
 	// Given
-	res := PingResponse{}
+	res := TestResponse{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		res.Path = r.URL.Path
 		res.Method = r.Method
@@ -163,7 +321,7 @@ func TestMakeRequestWithTimeout(t *testing.T) {
 		}
 	}
 	if !is_value_found {
-		t.Error("value content-type: application-json not found")
+		t.Error("value content-type: application/json not found")
 	}
 	if res.Body != "{\"hello\":\"world\"}\n" {
 		t.Error("invalid body value")
@@ -172,7 +330,7 @@ func TestMakeRequestWithTimeout(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	response_json := PingResponse{}
+	response_json := TestResponse{}
 	if err := json.Unmarshal(body, &response_json); err != nil {
 		t.Error(err.Error())
 	}
@@ -180,7 +338,7 @@ func TestMakeRequestWithTimeout(t *testing.T) {
 
 func TestMakeRequestWithTimeoutTimeout(t *testing.T) {
 	// Given
-	res := PingResponse{}
+	res := TestResponse{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		res.Path = r.URL.Path
 		res.Method = r.Method

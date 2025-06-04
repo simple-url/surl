@@ -66,4 +66,7 @@ func main() {
 	surl_requests := command.NewSurl()
 	resp := utils.Response{}
 	RunCommand(surl_requests, &resp, os.Args)
+	// req := requests.InitRequestsWithConfig(requests.RequestsConfig{})
+	// req.SetUrl("http://localhost:3000")
+	// fmt.Println(req)
 }
